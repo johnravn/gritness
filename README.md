@@ -1,5 +1,7 @@
 # Gritness Hub
 
+A hub for my personal problem solving applications
+
 A centralized project hub built with React, TypeScript, and modern web technologies. This hub serves as a single entry point for accessing multiple smaller projects under one domain.
 
 ## Tech Stack
