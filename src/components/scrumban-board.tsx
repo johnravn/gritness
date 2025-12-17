@@ -14,8 +14,6 @@ import {
   createBoard,
   getBoards,
   deleteBoard,
-  type Project,
-  type Board,
 } from '@/lib/scrumban'
 
 export function ScrumbanBoard() {

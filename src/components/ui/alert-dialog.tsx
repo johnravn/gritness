@@ -1,4 +1,3 @@
-import * as React from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./dialog"
 import { Button } from "./button"
 

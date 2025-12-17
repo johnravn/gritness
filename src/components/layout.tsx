@@ -1,4 +1,4 @@
-import { ReactNode } from 'react'
+import { type ReactNode } from 'react'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarFooter } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
 import { LayoutDashboard, Moon, Sun } from 'lucide-react'
