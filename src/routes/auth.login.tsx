@@ -10,9 +10,9 @@ import { Link } from '@tanstack/react-router'
 export const loginRoute = createRoute({
   getParentRoute: () => rootRoute,
   path: '/auth/login',
-  validateSearch: (search: Record<string, unknown>) => {
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } => {
     return {
-      redirect: (search.redirect as string) || '/',
+      redirect: search.redirect as string | undefined,
     }
   },
   beforeLoad: async ({ search }) => {
@@ -21,7 +21,7 @@ export const loginRoute = createRoute({
       const { account } = await import('@/lib/appwrite')
       await account.get()
       throw redirect({
-        to: search.redirect as string || '/',
+        to: search.redirect || '/',
       })
     } catch (error) {
       // If redirect was thrown, re-throw it
@@ -41,7 +41,7 @@ function LoginPage() {
   const [loading, setLoading] = useState(false)
   const { login } = useAuth()
   const navigate = useNavigate()
-  const { redirect: redirectTo = '/' } = useSearch({ from: '/auth/login' })
+  const { redirect: redirectTo } = useSearch({ from: '/auth/login' })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -50,7 +50,7 @@ function LoginPage() {
 
     try {
       await login(email, password)
-      navigate({ to: redirectTo })
+      navigate({ to: redirectTo || '/' })
     } catch (err: any) {
       setError(err.message || 'Failed to login. Please check your credentials.')
     } finally {
