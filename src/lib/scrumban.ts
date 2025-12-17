@@ -1,7 +1,8 @@
 import { databases } from "@/lib/appwrite";
 import { ID, Query } from "appwrite";
 
-const DATABASE_ID = "6942473d00010ac2bf23";
+const DATABASE_ID =
+  import.meta.env.VITE_APPWRITE_DATABASE_ID || "6942473d00010ac2bf23";
 const PROJECTS_COLLECTION = "projects";
 const BOARDS_COLLECTION = "boards";
 const TASKS_COLLECTION = "tasks";

@@ -119,7 +119,7 @@ function Column({ id, title, color, tasks, onTaskEdit, onTaskDelete }: {
   onTaskDelete: (taskId: string) => void
 }) {
   const taskIds = tasks.map((task) => task.$id)
-  const { setNodeRef } = useDroppable({ id })
+  const { setNodeRef, isOver } = useDroppable({ id })
 
   return (
     <div ref={setNodeRef} className="flex-1 min-w-[300px]">
@@ -128,18 +128,20 @@ function Column({ id, title, color, tasks, onTaskEdit, onTaskDelete }: {
           {title} ({tasks.length})
         </h3>
       </div>
-      <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
-        <div className="space-y-2 min-h-[200px]">
-          {tasks.map((task) => (
-            <TaskCard
-              key={task.$id}
-              task={task}
-              onEdit={() => onTaskEdit(task)}
-              onDelete={() => onTaskDelete(task.$id)}
-            />
-          ))}
-        </div>
-      </SortableContext>
+      <div className={`rounded-b-lg border-2 min-h-[200px] p-2 transition-colors ${isOver ? 'border-primary bg-primary/5' : 'border-transparent'}`}>
+        <SortableContext items={taskIds} strategy={verticalListSortingStrategy}>
+          <div className="space-y-2">
+            {tasks.map((task) => (
+              <TaskCard
+                key={task.$id}
+                task={task}
+                onEdit={() => onTaskEdit(task)}
+                onDelete={() => onTaskDelete(task.$id)}
+              />
+            ))}
+          </div>
+        </SortableContext>
+      </div>
     </div>
   )
 }
@@ -180,7 +182,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
 
   // Update task mutation
   const updateTaskMutation = useMutation({
-    mutationFn: (updates: Partial<Task>) => editingTask ? updateTask(editingTask.$id, updates) : Promise.reject(),
+    mutationFn: ({ taskId, updates }: { taskId: string; updates: Partial<Task> }) => updateTask(taskId, updates),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks', boardId] })
       setShowTaskDialog(false)
@@ -198,6 +200,12 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
     },
   })
 
+  const tasksByStatus = {
+    todo: tasks.filter((t) => t.status === 'todo').sort((a, b) => a.order - b.order),
+    'in-progress': tasks.filter((t) => t.status === 'in-progress').sort((a, b) => a.order - b.order),
+    done: tasks.filter((t) => t.status === 'done').sort((a, b) => a.order - b.order),
+  }
+
   const handleDragStart = (event: DragStartEvent) => {
     const task = tasks.find((t) => t.$id === event.active.id)
     setActiveTask(task || null)
@@ -212,11 +220,38 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
     const task = tasks.find((t) => t.$id === active.id)
     if (!task) return
 
-    const newStatus = over.id as Status
-    if (task.status === newStatus) return
+    // Check if over.id is a valid status (column ID)
+    const validStatuses: Status[] = ['todo', 'in-progress', 'done']
+    let newStatus: Status | undefined
+
+    if (validStatuses.includes(over.id as Status)) {
+      // Dropped directly on a column droppable
+      newStatus = over.id as Status
+    } else {
+      // Dropped on a task - find which column that task belongs to by checking tasksByStatus
+      // We need to find which column contains this task
+      for (const status of validStatuses) {
+        if (tasksByStatus[status].some(t => t.$id === over.id)) {
+          newStatus = status
+          break
+        }
+      }
+      
+      // Fallback: if we still don't have a status, find the task and use its status
+      if (!newStatus) {
+        const overTask = tasks.find((t) => t.$id === over.id)
+        if (overTask) {
+          newStatus = overTask.status
+        } else {
+          return
+        }
+      }
+    }
+
+    if (!newStatus || task.status === newStatus) return
 
     // Update task status
-    updateTaskMutation.mutate({ status: newStatus })
+    updateTaskMutation.mutate({ taskId: task.$id, updates: { status: newStatus } })
   }
 
   const handleCreateTask = () => {
@@ -235,16 +270,13 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
   const handleUpdateTask = () => {
     if (taskTitle.trim() && editingTask) {
       updateTaskMutation.mutate({
-        title: taskTitle,
-        description: taskDescription,
+        taskId: editingTask.$id,
+        updates: {
+          title: taskTitle,
+          description: taskDescription,
+        },
       })
     }
-  }
-
-  const tasksByStatus = {
-    todo: tasks.filter((t) => t.status === 'todo').sort((a, b) => a.order - b.order),
-    'in-progress': tasks.filter((t) => t.status === 'in-progress').sort((a, b) => a.order - b.order),
-    done: tasks.filter((t) => t.status === 'done').sort((a, b) => a.order - b.order),
   }
 
   return (
