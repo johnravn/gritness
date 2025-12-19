@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckSquare, FileText, Globe, Music } from 'lucide-react'
+import { CheckSquare, FileText, Globe, Music, Lock, Sparkles } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 export interface Project {
@@ -8,6 +8,7 @@ export interface Project {
   description: string
   icon: React.ComponentType<React.SVGProps<SVGSVGElement>>
   path: string
+  requiresAuth?: boolean
 }
 
 export const projects: Project[] = [
@@ -17,6 +18,14 @@ export const projects: Project[] = [
     description: 'Manage your tasks with a kanban-style board and todo lists',
     icon: CheckSquare,
     path: '/projects/todo',
+    requiresAuth: true,
+  },
+  {
+    id: 'baby-name-generator',
+    title: 'Baby Name Generator',
+    description: 'Generate beautiful variants of John for your little one in multiple languages',
+    icon: Sparkles,
+    path: '/baby-name-generator',
   },
   {
     id: 'chordpro',
@@ -60,7 +69,17 @@ export function Dashboard() {
                   <div className="p-2 rounded-lg bg-primary/10 text-primary">
                     <project.icon className="h-8 w-8" />
                   </div>
-                  <CardTitle className="text-xl">{project.title}</CardTitle>
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-xl">{project.title}</CardTitle>
+                      {project.requiresAuth && (
+                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-primary/10 text-primary border border-primary/20">
+                          <Lock className="h-3 w-3" />
+                          Login Required
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <CardDescription>{project.description}</CardDescription>
               </CardHeader>

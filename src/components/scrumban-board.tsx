@@ -1,12 +1,15 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Plus, FolderKanban, Trash2, ArrowLeft } from 'lucide-react'
+import { Plus, FolderKanban, Trash2, ArrowLeft, Lock, Users } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog'
 import { AlertDialog } from '@/components/ui/alert-dialog'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { KanbanBoard } from '@/components/kanban-board'
+import { CollaborationDialog } from '@/components/collaboration-dialog'
+import { useAuth } from '@/lib/auth'
+import { Link } from '@tanstack/react-router'
 import {
   createProject,
   getProjects,
@@ -14,42 +17,49 @@ import {
   createBoard,
   getBoards,
   deleteBoard,
+  checkProjectPermission,
+  checkBoardPermission,
 } from '@/lib/scrumban'
 
 export function ScrumbanBoard() {
   const queryClient = useQueryClient()
+  const { isAuthenticated, user } = useAuth()
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [selectedBoardId, setSelectedBoardId] = useState<string | null>(null)
   const [showProjectDialog, setShowProjectDialog] = useState(false)
   const [showBoardDialog, setShowBoardDialog] = useState(false)
   const [projectName, setProjectName] = useState('')
   const [projectDescription, setProjectDescription] = useState('')
+  const [projectRequiresAuth, setProjectRequiresAuth] = useState(false)
   const [boardName, setBoardName] = useState('')
   const [boardDescription, setBoardDescription] = useState('')
   const [deleteProjectDialog, setDeleteProjectDialog] = useState<{ open: boolean; projectId: string | null }>({ open: false, projectId: null })
   const [deleteBoardDialog, setDeleteBoardDialog] = useState<{ open: boolean; boardId: string | null }>({ open: false, boardId: null })
+  const [collaborationDialog, setCollaborationDialog] = useState<{ open: boolean; type: 'project' | 'board' | null; itemId: string | null; itemName: string }>({ open: false, type: null, itemId: null, itemName: '' })
 
-  // Fetch projects
+  // Fetch projects - filter by user ID if authenticated
   const { data: projects = [], error: projectsError } = useQuery({
-    queryKey: ['projects'],
-    queryFn: getProjects,
+    queryKey: ['projects', user?.$id],
+    queryFn: () => getProjects(user?.$id),
+    enabled: isAuthenticated, // Only fetch when authenticated
   })
 
   // Fetch boards for selected project
   const { data: boards = [] } = useQuery({
-    queryKey: ['boards', selectedProjectId],
-    queryFn: () => selectedProjectId ? getBoards(selectedProjectId) : Promise.resolve([]),
+    queryKey: ['boards', selectedProjectId, user?.$id],
+    queryFn: () => selectedProjectId ? getBoards(selectedProjectId, user?.$id) : Promise.resolve([]),
     enabled: !!selectedProjectId,
   })
 
   // Create project mutation
   const createProjectMutation = useMutation({
-    mutationFn: () => createProject(projectName, projectDescription),
+    mutationFn: () => createProject(projectName, projectDescription, projectRequiresAuth, user?.$id),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({ queryKey: ['projects', user?.$id] })
       setShowProjectDialog(false)
       setProjectName('')
       setProjectDescription('')
+      setProjectRequiresAuth(false)
     },
     onError: (error: any) => {
       console.error('Error creating project:', error)
@@ -61,7 +71,7 @@ export function ScrumbanBoard() {
   const deleteProjectMutation = useMutation({
     mutationFn: deleteProject,
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['projects'] })
+      queryClient.invalidateQueries({ queryKey: ['projects', user?.$id] })
       if (selectedProjectId) {
         setSelectedProjectId(null)
         setSelectedBoardId(null)
@@ -71,7 +81,7 @@ export function ScrumbanBoard() {
 
   // Create board mutation
   const createBoardMutation = useMutation({
-    mutationFn: () => selectedProjectId ? createBoard(selectedProjectId, boardName, boardDescription) : Promise.reject(),
+    mutationFn: () => selectedProjectId ? createBoard(selectedProjectId, boardName, boardDescription, user?.$id) : Promise.reject(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['boards', selectedProjectId] })
       setShowBoardDialog(false)
@@ -99,6 +109,16 @@ export function ScrumbanBoard() {
     if (projectName.trim()) {
       createProjectMutation.mutate()
     }
+  }
+
+  const handleProjectClick = (project: { $id: string; requiresAuth?: boolean }) => {
+    // Check if project requires authentication and user is not authenticated
+    if (project.requiresAuth && !isAuthenticated) {
+      // Redirect to login with redirect back to this page
+      window.location.href = `/auth/login?redirect=${encodeURIComponent('/projects/todo')}`
+      return
+    }
+    setSelectedProjectId(project.$id)
   }
 
   const handleCreateBoard = () => {
@@ -148,99 +168,185 @@ export function ScrumbanBoard() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-2xl font-semibold">Projects</h2>
-            <Button onClick={() => setShowProjectDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Project
-            </Button>
+            {isAuthenticated && (
+              <Button onClick={() => setShowProjectDialog(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                New Project
+              </Button>
+            )}
           </div>
           {projects.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <FolderKanban className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-                <p className="text-muted-foreground mb-4">No projects yet</p>
-                <Button onClick={() => setShowProjectDialog(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Your First Project
-                </Button>
+                <p className="text-muted-foreground mb-4">
+                  {isAuthenticated ? 'No projects yet' : 'No public projects available'}
+                </p>
+                {isAuthenticated && (
+                  <Button onClick={() => setShowProjectDialog(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Your First Project
+                  </Button>
+                )}
+                {!isAuthenticated && (
+                  <div className="flex flex-col items-center gap-2">
+                    <p className="text-sm text-muted-foreground">Login to create and access private projects</p>
+                    <Link to="/auth/login">
+                      <Button variant="outline">
+                        Login
+                      </Button>
+                    </Link>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {projects.map((project) => (
-                <Card
-                  key={project.$id}
-                  className="h-full transition-all hover:shadow-lg hover:scale-105 cursor-pointer relative group"
-                  onClick={() => setSelectedProjectId(project.$id)}
-                >
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3 flex-1">
-                        <div className="p-2 rounded-lg bg-primary/10 text-primary">
-                          <FolderKanban className="h-6 w-6" />
+              {projects.map((project) => {
+                const isPrivate = project.requiresAuth
+                const canAccess = isAuthenticated || !isPrivate
+                return (
+                  <Card
+                    key={project.$id}
+                    className={`h-full transition-all hover:shadow-lg hover:scale-105 cursor-pointer relative group ${
+                      !canAccess ? 'opacity-60' : ''
+                    }`}
+                    onClick={() => handleProjectClick(project)}
+                  >
+                    <CardHeader>
+                      <div className="flex items-start justify-between">
+                        <div className="flex items-center gap-3 flex-1">
+                          <div className="p-2 rounded-lg bg-primary/10 text-primary">
+                            <FolderKanban className="h-6 w-6" />
+                          </div>
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2">
+                              <CardTitle className="text-xl">{project.name}</CardTitle>
+                              {isPrivate && (
+                                <Lock className="h-4 w-4 text-muted-foreground" title="Requires authentication" />
+                              )}
+                            </div>
+                          </div>
                         </div>
-                        <div className="flex-1">
-                          <CardTitle className="text-xl">{project.name}</CardTitle>
-                        </div>
+                        {isAuthenticated && (
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setCollaborationDialog({ 
+                                  open: true, 
+                                  type: 'project', 
+                                  itemId: project.$id, 
+                                  itemName: project.name 
+                                })
+                              }}
+                              title="Manage collaborators"
+                            >
+                              <Users className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setDeleteProjectDialog({ open: true, projectId: project.$id })
+                              }}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setDeleteProjectDialog({ open: true, projectId: project.$id })
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
-                    </div>
-                    {project.description && (
-                      <CardDescription className="mt-2">{project.description}</CardDescription>
-                    )}
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      Click to view boards →
-                    </p>
-                  </CardContent>
-                </Card>
-              ))}
+                      {project.description && (
+                        <CardDescription className="mt-2">{project.description}</CardDescription>
+                      )}
+                    </CardHeader>
+                    <CardContent>
+                      <p className="text-sm text-muted-foreground">
+                        {!canAccess ? (
+                          <span className="flex items-center gap-2">
+                            <Lock className="h-3 w-3" />
+                            Login required →
+                          </span>
+                        ) : (
+                          'Click to view boards →'
+                        )}
+                      </p>
+                    </CardContent>
+                  </Card>
+                )
+              })}
             </div>
           )}
         </div>
       )}
 
       {/* Boards View */}
-      {selectedProjectId && !selectedBoardId && (
-        <div className="mb-8">
-          <div className="flex items-center gap-4 mb-6">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => {
-                setSelectedProjectId(null)
-                setSelectedBoardId(null)
-              }}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </Button>
-            <h2 className="text-2xl font-semibold">
-              {projects.find(p => p.$id === selectedProjectId)?.name || 'Boards'}
-            </h2>
-            <Button onClick={() => setShowBoardDialog(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              New Board
-            </Button>
-          </div>
+      {selectedProjectId && !selectedBoardId && (() => {
+        const selectedProject = projects.find(p => p.$id === selectedProjectId)
+        // Check if project requires auth and user is not authenticated
+        if (selectedProject?.requiresAuth && !isAuthenticated) {
+          return (
+            <div className="mb-8">
+              <Card className="border-yellow-500 bg-yellow-500/10">
+                <CardHeader>
+                  <CardTitle className="text-yellow-700 dark:text-yellow-300 flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
+                    Authentication Required
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-4">
+                    This project requires authentication to access. Please log in to continue.
+                  </p>
+                  <Link to="/auth/login">
+                    <Button variant="outline">
+                      Go to Login
+                    </Button>
+                  </Link>
+                </CardContent>
+              </Card>
+            </div>
+          )
+        }
+        return (
+          <div className="mb-8">
+            <div className="flex items-center gap-4 mb-6">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => {
+                  setSelectedProjectId(null)
+                  setSelectedBoardId(null)
+                }}
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </Button>
+              <h2 className="text-2xl font-semibold">
+                {selectedProject?.name || 'Boards'}
+              </h2>
+              {isAuthenticated && (
+                <Button onClick={() => setShowBoardDialog(true)}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  New Board
+                </Button>
+              )}
+            </div>
           {boards.length === 0 ? (
             <Card>
               <CardContent className="py-12 text-center">
                 <FolderKanban className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
                 <p className="text-muted-foreground mb-4">No boards yet</p>
-                <Button onClick={() => setShowBoardDialog(true)}>
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create Your First Board
-                </Button>
+                {isAuthenticated && (
+                  <Button onClick={() => setShowBoardDialog(true)}>
+                    <Plus className="mr-2 h-4 w-4" />
+                    Create Your First Board
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ) : (
@@ -261,17 +367,36 @@ export function ScrumbanBoard() {
                           <CardTitle className="text-xl">{board.name}</CardTitle>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          setDeleteBoardDialog({ open: true, boardId: board.$id })
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4 text-destructive" />
-                      </Button>
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setCollaborationDialog({ 
+                              open: true, 
+                              type: 'board', 
+                              itemId: board.$id, 
+                              itemName: board.name 
+                            })
+                          }}
+                          title="Manage collaborators"
+                        >
+                          <Users className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setDeleteBoardDialog({ open: true, boardId: board.$id })
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4 text-destructive" />
+                        </Button>
+                      </div>
                     </div>
                     {board.description && (
                       <CardDescription className="mt-2">{board.description}</CardDescription>
@@ -286,8 +411,9 @@ export function ScrumbanBoard() {
               ))}
             </div>
           )}
-        </div>
-      )}
+          </div>
+        )
+      })()}
 
       {/* Kanban Board */}
       {selectedBoardId && (
@@ -339,6 +465,19 @@ export function ScrumbanBoard() {
                   if (e.key === 'Enter') handleCreateProject()
                 }}
               />
+            </div>
+            <div className="flex items-center space-x-2">
+              <input
+                type="checkbox"
+                id="requiresAuth"
+                checked={projectRequiresAuth}
+                onChange={(e) => setProjectRequiresAuth(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <label htmlFor="requiresAuth" className="text-sm font-medium flex items-center gap-2 cursor-pointer">
+                <Lock className="h-4 w-4" />
+                Require authentication to access
+              </label>
             </div>
           </div>
           <DialogFooter>
@@ -433,6 +572,17 @@ export function ScrumbanBoard() {
           }
         }}
       />
+
+      {/* Collaboration Dialog */}
+      {collaborationDialog.type && collaborationDialog.itemId && (
+        <CollaborationDialog
+          open={collaborationDialog.open}
+          onOpenChange={(open) => setCollaborationDialog({ ...collaborationDialog, open })}
+          type={collaborationDialog.type}
+          itemId={collaborationDialog.itemId}
+          itemName={collaborationDialog.itemName}
+        />
+      )}
     </div>
   )
 }
