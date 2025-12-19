@@ -35,13 +35,13 @@ export function CollaborationDialog({ open, onOpenChange, type, itemId, itemName
   const [isInviting, setIsInviting] = useState(false)
 
   // Fetch shares
-  const { data: shares = [] } = useQuery({
+  const { data: shares = [] } = useQuery<ProjectShare[] | BoardShare[]>({
     queryKey: [type === 'project' ? 'projectShares' : 'boardShares', itemId],
-    queryFn: () => {
+    queryFn: async () => {
       if (type === 'project') {
-        return getProjectShares(itemId)
+        return await getProjectShares(itemId)
       } else {
-        return getBoardShares(itemId)
+        return await getBoardShares(itemId)
       }
     },
     enabled: open && !!itemId,
@@ -210,7 +210,7 @@ export function CollaborationDialog({ open, onOpenChange, type, itemId, itemName
               )}
 
               {/* Shared Users */}
-              {shares.map((share: ProjectShare | BoardShare) => (
+              {(shares as (ProjectShare | BoardShare)[]).map((share: ProjectShare | BoardShare) => (
                 <Card key={share.$id}>
                   <CardContent className="p-3 flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -263,7 +263,7 @@ export function CollaborationDialog({ open, onOpenChange, type, itemId, itemName
                 </Card>
               ))}
 
-              {shares.length === 0 && !user && (
+              {(shares as (ProjectShare | BoardShare)[]).length === 0 && !user && (
                 <Card>
                   <CardContent className="p-6 text-center text-muted-foreground">
                     No collaborators yet

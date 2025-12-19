@@ -69,14 +69,10 @@ type Status = "todo" | "in-progress" | "done";
 
 function TaskCard({
   task,
-  onEdit,
-  onDelete,
   canWrite,
   onOpenDetails,
 }: {
   task: Task;
-  onEdit: () => void;
-  onDelete: () => void;
   canWrite: boolean;
   onOpenDetails: () => void;
 }) {
@@ -196,8 +192,6 @@ function Column({
   title,
   color,
   tasks,
-  onTaskEdit,
-  onTaskDelete,
   onTaskDetails,
   canWrite,
 }: {
@@ -205,8 +199,6 @@ function Column({
   title: string;
   color: string;
   tasks: Task[];
-  onTaskEdit: (task: Task) => void;
-  onTaskDelete: (taskId: string) => void;
   onTaskDetails: (task: Task) => void;
   canWrite: boolean;
 }) {
@@ -244,8 +236,6 @@ function Column({
               <TaskCard
                 key={task.$id}
                 task={task}
-                onEdit={() => onTaskEdit(task)}
-                onDelete={() => onTaskDelete(task.$id)}
                 onOpenDetails={() => onTaskDetails(task)}
                 canWrite={canWrite}
               />
@@ -396,7 +386,7 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
 
       return { previousTasks };
     },
-    onError: (error, variables, context) => {
+    onError: (error, _variables, context) => {
       // Rollback on error
       if (context?.previousTasks) {
         queryClient.setQueryData(["tasks", boardId], context.previousTasks);
@@ -629,10 +619,6 @@ export function KanbanBoard({ boardId }: KanbanBoardProps) {
               title={column.title}
               color={column.color}
               tasks={tasksByStatus[column.id]}
-              onTaskEdit={handleEditTask}
-              onTaskDelete={(taskId) => {
-                setDeleteTaskDialog({ open: true, taskId });
-              }}
               onTaskDetails={(task) => {
                 setTaskDetailsDialog(task);
               }}

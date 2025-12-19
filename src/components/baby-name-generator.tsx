@@ -56,8 +56,8 @@ const nameDatabase: NameData = {
     ],
   },
   norwegian: {
-    boy: ["Jon", "John", "Johan"],
-    girl: ["Johanne", "Johan", "Jonna", "Jone", "Johnna", "Johnette"],
+    boy: ["Jon", "John", "Johan", "Jona"],
+    girl: ["Johanne", "Johan", "Jonna", "Jona", "Johnna", "Johnette"],
   },
   german: {
     boy: ["Johann", "Johannes", "Johan"],

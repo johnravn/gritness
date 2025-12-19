@@ -17,8 +17,6 @@ import {
   createBoard,
   getBoards,
   deleteBoard,
-  checkProjectPermission,
-  checkBoardPermission,
 } from '@/lib/scrumban'
 
 export function ScrumbanBoard() {
@@ -223,7 +221,9 @@ export function ScrumbanBoard() {
                             <div className="flex items-center gap-2">
                               <CardTitle className="text-xl">{project.name}</CardTitle>
                               {isPrivate && (
-                                <Lock className="h-4 w-4 text-muted-foreground" title="Requires authentication" />
+                                <span title="Requires authentication">
+                                  <Lock className="h-4 w-4 text-muted-foreground" />
+                                </span>
                               )}
                             </div>
                           </div>

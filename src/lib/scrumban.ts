@@ -377,8 +377,8 @@ export async function inviteUserToProject(
   projectId: string,
   userEmail: string,
   permission: Permission,
-  inviterUserId?: string,
-  inviterUserName?: string
+  _inviterUserId?: string,
+  _inviterUserName?: string
 ): Promise<ProjectShare> {
   // In a real app, you'd look up the user by email from Appwrite's Users API
   // For now, we'll store the email and let the backend handle user lookup
@@ -469,8 +469,8 @@ export async function inviteUserToBoard(
   boardId: string,
   userEmail: string,
   permission: Permission,
-  inviterUserId?: string,
-  inviterUserName?: string
+  _inviterUserId?: string,
+  _inviterUserName?: string
 ): Promise<BoardShare> {
   try {
     return (await databases.createDocument(
