@@ -5,6 +5,8 @@ import { todoRoute } from "./routes/projects.todo";
 import { loginRoute } from "./routes/auth.login";
 import { signupRoute } from "./routes/auth.signup";
 import { babyNameGeneratorRoute } from "./routes/baby-name-generator";
+import { neckSleepingOverviewRoute } from "./routes/projects.neck-sleeping";
+import { neckSleepingExerciseRoute } from "./routes/projects.neck-sleeping.$exerciseId";
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -12,6 +14,8 @@ const routeTree = rootRoute.addChildren([
   loginRoute,
   signupRoute,
   babyNameGeneratorRoute,
+  neckSleepingOverviewRoute,
+  neckSleepingExerciseRoute,
 ]);
 
 export const router = createRouter({ routeTree });

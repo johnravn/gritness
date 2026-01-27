@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckSquare, FileText, Globe, Music, Lock, Sparkles } from 'lucide-react'
+import { CheckSquare, FileText, Globe, Music, Lock, Sparkles, Dumbbell } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 export interface Project {
@@ -26,6 +26,13 @@ export const projects: Project[] = [
     description: 'Generate beautiful variants of John for your little one in multiple languages',
     icon: Sparkles,
     path: '/baby-name-generator',
+  },
+  {
+    id: 'neck-sleeping',
+    title: 'Upright Sleep Neck Lab',
+    description: 'Interactive neck drills for standing or seated sleep positions',
+    icon: Dumbbell,
+    path: '/projects/neck-sleeping',
   },
   {
     id: 'chordpro',
