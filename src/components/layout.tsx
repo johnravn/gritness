@@ -1,10 +1,10 @@
 import { type ReactNode, useState, useEffect } from 'react'
 import { Sidebar, SidebarContent, SidebarHeader, SidebarFooter } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
-import { LayoutDashboard, Moon, Sun, LogOut, LogIn, User, Menu, X } from 'lucide-react'
+import { LayoutDashboard, LogOut, LogIn, User, Menu, X } from 'lucide-react'
 import { Link, useNavigate, useLocation } from '@tanstack/react-router'
-import { useTheme } from '@/components/theme-provider'
 import { useAuth } from '@/lib/auth'
+import { getAvatarIcon } from '@/lib/avatar-icons'
 import { projects } from '@/components/dashboard'
 import { cn } from '@/lib/utils'
 
@@ -13,7 +13,6 @@ interface LayoutProps {
 }
 
 export function Layout({ children }: LayoutProps) {
-  const { theme, setTheme, resolvedTheme } = useTheme()
   const { user, logout, isAuthenticated } = useAuth()
   const navigate = useNavigate()
   const location = useLocation()
@@ -34,16 +33,6 @@ export function Layout({ children }: LayoutProps) {
     window.addEventListener('keydown', handleEscape)
     return () => window.removeEventListener('keydown', handleEscape)
   }, [sidebarOpen])
-
-  const toggleTheme = () => {
-    if (theme === 'light') {
-      setTheme('dark')
-    } else if (theme === 'dark') {
-      setTheme('system')
-    } else {
-      setTheme('light')
-    }
-  }
 
   const handleLogout = async () => {
     await logout()
@@ -149,29 +138,19 @@ export function Layout({ children }: LayoutProps) {
         <SidebarFooter>
           <div className="space-y-2">
             {isAuthenticated && user && (
-              <div className="px-2 py-1.5 text-sm text-muted-foreground flex items-center gap-2">
-                <User className="h-4 w-4" />
+              <Link
+                to="/profile"
+                className="px-2 py-1.5 text-sm text-muted-foreground flex items-center gap-2 hover:text-foreground hover:bg-accent rounded-md transition-colors"
+                onClick={() => setSidebarOpen(false)}
+              >
+                {(() => {
+                  const iconId = (user.prefs as Record<string, string> | undefined)?.avatarIcon
+                  const { Icon } = iconId ? getAvatarIcon(iconId) : { Icon: User }
+                  return <Icon className="h-5 w-5 flex-shrink-0" />
+                })()}
                 <span className="truncate">{user.name || user.email}</span>
-              </div>
+              </Link>
             )}
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={toggleTheme}
-              title={`Current: ${theme === 'system' ? 'System' : theme === 'dark' ? 'Dark' : 'Light'} (${resolvedTheme})`}
-            >
-              {resolvedTheme === 'dark' ? (
-                <>
-                  <Moon className="mr-2 h-4 w-4" />
-                  Dark Mode
-                </>
-              ) : (
-                <>
-                  <Sun className="mr-2 h-4 w-4" />
-                  Light Mode
-                </>
-              )}
-            </Button>
             {isAuthenticated ? (
               <Button
                 variant="ghost"

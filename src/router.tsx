@@ -7,6 +7,9 @@ import { signupRoute } from "./routes/auth.signup";
 import { babyNameGeneratorRoute } from "./routes/baby-name-generator";
 import { neckSleepingOverviewRoute } from "./routes/projects.neck-sleeping";
 import { neckSleepingExerciseRoute } from "./routes/projects.neck-sleeping.$exerciseId";
+import { bibleCoopRoute } from "./routes/projects.bible-coop";
+import { chordProRoute } from "./routes/projects.chordpro";
+import { profileRoute } from "./routes/profile";
 
 const routeTree = rootRoute.addChildren([
   indexRoute,
@@ -16,6 +19,9 @@ const routeTree = rootRoute.addChildren([
   babyNameGeneratorRoute,
   neckSleepingOverviewRoute,
   neckSleepingExerciseRoute,
+  bibleCoopRoute,
+  chordProRoute,
+  profileRoute,
 ]);
 
 export const router = createRouter({ routeTree });

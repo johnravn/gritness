@@ -43,6 +43,13 @@ A centralized project hub built with React, TypeScript, and modern web technolog
    ```env
    VITE_APPWRITE_ENDPOINT=https://cloud.appwrite.io/v1
    VITE_APPWRITE_PROJECT_ID=your-project-id
+   VITE_APPWRITE_DATABASE_ID=your-database-id
+   VITE_APPWRITE_BIBLE_COOP_PLANS_COLLECTION_ID=biblecoopplans
+   VITE_APPWRITE_BIBLE_COOP_MEMBERS_COLLECTION_ID=biblecoopmembers
+   VITE_APPWRITE_BIBLE_COOP_READ_LOGS_COLLECTION_ID=biblecoopreadlogs
+   VITE_APPWRITE_BIBLE_COOP_INVITES_COLLECTION_ID=biblecoopinvites
+   VITE_APPWRITE_CHORDPRO_FOLDERS_COLLECTION_ID=chordproFolders
+   VITE_APPWRITE_CHORDPRO_SONGS_COLLECTION_ID=chordproSongs
    ```
 
 4. Start the development server:
@@ -74,9 +81,71 @@ src/
 The dashboard currently includes cards for:
 
 - **Todo / Scrumban Board** - Task management with kanban-style boards
+- **Bible Co-op Reading** - Shared chapter plans with adjusted pacing and progress
 - **ChordPro to PDF Converter** - Convert ChordPro files to PDF
 - **Website Reviewer** - Review and analyze websites
 - **Documentation Hub** - Centralized documentation
+
+## Appwrite Schema for Bible Co-op Reading
+
+Create these collections in your Appwrite database:
+
+### `bibleCoopPlans`
+- `title` (string, required)
+- `description` (string, optional)
+- `ownerId` (string, required)
+- `ownerName` (string, optional)
+- `startDate` (string, required, format `YYYY-MM-DD`)
+- `totalDays` (integer, required)
+- `startBook` (string, required)
+- `startChapter` (integer, required)
+- `endBook` (string, required)
+- `endChapter` (integer, required)
+- `status` (string, optional, e.g. `active`)
+
+### `bibleCoopMembers`
+- `planId` (string, required)
+- `userId` (string, required)
+- `userName` (string, optional)
+- `userEmail` (string, optional)
+- `role` (string, required: `owner` or `member`)
+
+### `bibleCoopReadLogs`
+- `planId` (string, required)
+- `userId` (string, required)
+- `userName` (string, optional)
+- `chapterBook` (string, required)
+- `chapterNumber` (integer, required)
+- `readDate` (string, required, format `YYYY-MM-DD`)
+
+### `biblecoopinvites`
+- `planId` (string, required)
+- `inviteeEmail` (string, required)
+- `inviterId` (string, required)
+
+Recommended indexes:
+- On all collections: index `planId` and `userId` where present
+- On `bibleCoopPlans`: index `ownerId`
+
+## Appwrite Schema for ChordPro Song Bank
+
+Create these collections in your Appwrite database:
+
+### `chordproFolders`
+- `ownerId` (string, required)
+- `name` (string, required)
+
+### `chordproSongs`
+- `ownerId` (string, required)
+- `folderId` (string, optional, can be empty string)
+- `title` (string, required)
+- `content` (string, required)
+- `key` (string, optional)
+- `artist` (string, optional)
+
+Recommended indexes:
+- On both collections: index `ownerId`
+- On `chordproSongs`: index `folderId`
 
 ## Adding New Projects
 

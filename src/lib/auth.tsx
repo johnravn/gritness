@@ -9,6 +9,11 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>
   signup: (email: string, password: string, name: string) => Promise<void>
   logout: () => Promise<void>
+  refreshUser: () => Promise<void>
+  updateName: (name: string) => Promise<void>
+  updateEmail: (email: string, password: string) => Promise<void>
+  updatePassword: (password: string, oldPassword: string) => Promise<void>
+  updatePrefs: (prefs: Record<string, unknown>) => Promise<void>
   isAuthenticated: boolean
 }
 
@@ -64,6 +69,37 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setUser(null)
   }
 
+  async function refreshUser() {
+    try {
+      const currentUser = await account.get()
+      setUser(currentUser)
+    } catch {
+      setUser(null)
+    }
+  }
+
+  async function updateName(name: string) {
+    const updatedUser = await account.updateName(name)
+    setUser(updatedUser)
+  }
+
+  async function updateEmail(email: string, password: string) {
+    const updatedUser = await account.updateEmail(email, password)
+    setUser(updatedUser)
+  }
+
+  async function updatePassword(password: string, oldPassword: string) {
+    const updatedUser = await account.updatePassword(password, oldPassword)
+    setUser(updatedUser)
+  }
+
+  async function updatePrefs(prefs: Record<string, unknown>) {
+    const currentPrefs = (user?.prefs as Record<string, unknown>) ?? {}
+    const mergedPrefs = { ...currentPrefs, ...prefs }
+    const updatedUser = await account.updatePrefs(mergedPrefs)
+    setUser(updatedUser)
+  }
+
   return (
     <AuthContext.Provider
       value={{
@@ -72,6 +108,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         login,
         signup,
         logout,
+        refreshUser,
+        updateName,
+        updateEmail,
+        updatePassword,
+        updatePrefs,
         isAuthenticated: !!user,
       }}
     >

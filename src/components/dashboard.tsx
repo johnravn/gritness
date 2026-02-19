@@ -1,5 +1,5 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckSquare, FileText, Globe, Music, Lock, Sparkles, Dumbbell } from 'lucide-react'
+import { CheckSquare, FileText, Globe, Music, Lock, Sparkles, Dumbbell, BookOpen } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 export interface Project {
@@ -40,6 +40,14 @@ export const projects: Project[] = [
     description: 'Convert ChordPro files to beautifully formatted PDF documents',
     icon: Music,
     path: '/projects/chordpro',
+  },
+  {
+    id: 'bible-coop',
+    title: 'Bible Co-op Reading',
+    description: 'Create shared chapter plans, log reading, and track member progress',
+    icon: BookOpen,
+    path: '/projects/bible-coop',
+    requiresAuth: true,
   },
   {
     id: 'reviewer',
