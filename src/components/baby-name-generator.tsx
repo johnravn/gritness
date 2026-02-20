@@ -57,7 +57,7 @@ const nameDatabase: NameData = {
   },
   norwegian: {
     boy: ["Jon", "John", "Johan", "Jona"],
-    girl: ["Johanne", "Johan", "Jonna", "Jona", "Johnna", "Johnette"],
+    girl: ["Johanne", "Jonna", "Jona", "Johnna", "Johnette"],
   },
   german: {
     boy: ["Johann", "Johannes", "Johan"],
@@ -193,7 +193,7 @@ function LanguageSelect({ value, onChange, onClear }: LanguageSelectProps) {
         onClick={() => setIsOpen(!isOpen)}
         className={cn(
           "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-          !value && "text-muted-foreground"
+          !value && "text-muted-foreground",
         )}
       >
         <div className="flex items-center gap-2">
@@ -203,7 +203,7 @@ function LanguageSelect({ value, onChange, onClear }: LanguageSelectProps) {
         <ChevronDown
           className={cn(
             "h-4 w-4 opacity-50 transition-transform",
-            isOpen && "rotate-180"
+            isOpen && "rotate-180",
           )}
         />
       </button>
@@ -218,7 +218,7 @@ function LanguageSelect({ value, onChange, onClear }: LanguageSelectProps) {
               }}
               className={cn(
                 "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground",
-                !value && "bg-accent text-accent-foreground"
+                !value && "bg-accent text-accent-foreground",
               )}
             >
               <span className="text-muted-foreground">
@@ -235,7 +235,7 @@ function LanguageSelect({ value, onChange, onClear }: LanguageSelectProps) {
                 }}
                 className={cn(
                   "flex w-full items-center gap-2 rounded-sm px-2 py-1.5 text-sm hover:bg-accent hover:text-accent-foreground",
-                  value === lang && "bg-accent text-accent-foreground"
+                  value === lang && "bg-accent text-accent-foreground",
                 )}
               >
                 <span className="text-lg">{languageFlags[lang]}</span>
@@ -397,7 +397,7 @@ export function BabyNameGenerator() {
                     "text-4xl font-bold text-foreground relative z-10",
                     isFadingOut && "name-fade-out",
                     isAnimating && "opacity-0",
-                    !isAnimating && !isFadingOut && "name-fade-in"
+                    !isAnimating && !isFadingOut && "name-fade-in",
                   )}
                 >
                   {generatedName}

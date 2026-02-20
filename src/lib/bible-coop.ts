@@ -190,14 +190,14 @@ export async function getPlansForUser(userId: string): Promise<CoopPlan[]> {
 
 export async function deletePlan(planId: string): Promise<void> {
   const [readLogs, members, invites] = await Promise.all([
-    databases.listDocuments(DATABASE_ID, READ_LOGS_COLLECTION_ID, [Query.equal('planId', planId)]),
+    getPlanReadLogs(planId),
     databases.listDocuments(DATABASE_ID, MEMBERS_COLLECTION_ID, [Query.equal('planId', planId)]),
     databases.listDocuments(DATABASE_ID, INVITES_COLLECTION_ID, [Query.equal('planId', planId)]),
   ])
   const deleteDoc = (collectionId: string, docId: string) =>
     databases.deleteDocument(DATABASE_ID, collectionId, docId)
   await Promise.all([
-    ...readLogs.documents.map((d) => deleteDoc(READ_LOGS_COLLECTION_ID, d.$id)),
+    ...readLogs.map((d) => deleteDoc(READ_LOGS_COLLECTION_ID, d.$id)),
     ...members.documents.map((d) => deleteDoc(MEMBERS_COLLECTION_ID, d.$id)),
     ...invites.documents.map((d) => deleteDoc(INVITES_COLLECTION_ID, d.$id)),
   ])
@@ -359,14 +359,31 @@ export async function deleteReadLog(logId: string): Promise<void> {
   await databases.deleteDocument(DATABASE_ID, READ_LOGS_COLLECTION_ID, logId)
 }
 
+const READ_LOGS_PAGE_SIZE = 100
+
 export async function getPlanReadLogs(planId: string): Promise<CoopReadLog[]> {
   try {
-    const response = await databases.listDocuments(
-      DATABASE_ID,
-      READ_LOGS_COLLECTION_ID,
-      [Query.equal('planId', planId)],
-    )
-    return sortByCreatedAt(response.documents as unknown as CoopReadLog[])
+    const all: CoopReadLog[] = []
+    let offset = 0
+    let hasMore = true
+
+    while (hasMore) {
+      const response = await databases.listDocuments(
+        DATABASE_ID,
+        READ_LOGS_COLLECTION_ID,
+        [
+          Query.equal('planId', planId),
+          Query.limit(READ_LOGS_PAGE_SIZE),
+          Query.offset(offset),
+        ],
+      )
+      const docs = response.documents as unknown as CoopReadLog[]
+      all.push(...docs)
+      offset += docs.length
+      hasMore = docs.length === READ_LOGS_PAGE_SIZE
+    }
+
+    return sortByCreatedAt(all)
   } catch (error: unknown) {
     if (isNotFoundError(error)) {
       return []
